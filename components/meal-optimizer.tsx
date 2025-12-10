@@ -8,13 +8,24 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Play, Target, BarChart3, Clock, CheckCircle, Zap, Activity, Coffee } from "lucide-react"
+import {
+  Play,
+  Sparkles,
+  TrendingUp,
+  TrendingDown,
+  Target,
+  Heart,
+  Leaf,
+  BarChart3,
+  Clock,
+  CheckCircle,
+} from "lucide-react"
 
 interface FoodItem {
   id: string
   name: string
-  dining_court_id: string
-  meal_type: "breakfast" | "lunch" | "dinner"
+  diningCourt: string
+  mealType: "breakfast" | "lunch" | "dinner"
   category: string
   calories: number
   protein: number
@@ -22,13 +33,12 @@ interface FoodItem {
   fat: number
   fiber: number
   sodium: number
-  serving_size: string
+  servingSize: string
 }
 
 interface OptimizedMeal {
   id: string
   optimizationType: string
-  calorieTarget: number
   breakfast: FoodItem[]
   lunch: FoodItem[]
   dinner: FoodItem[]
@@ -52,30 +62,12 @@ export function MealOptimizer() {
   const [selectedMeal, setSelectedMeal] = useState<OptimizedMeal | null>(null)
 
   const optimizationTypes = [
-    {
-      value: "quick_meal",
-      label: "Quick Meal (1,500 cal)",
-      icon: Coffee,
-      color: "green",
-      calorieTarget: 1500,
-      description: "Light, efficient meals for busy days or cutting phases",
-    },
-    {
-      value: "balanced_meal",
-      label: "Balanced Meal (2,500 cal)",
-      icon: Target,
-      color: "blue",
-      calorieTarget: 2500,
-      description: "Well-rounded nutrition for maintenance and general health",
-    },
-    {
-      value: "power_meal",
-      label: "Power Meal (4,000 cal)",
-      icon: Zap,
-      color: "red",
-      calorieTarget: 4000,
-      description: "High-energy meals for bulking, athletes, or high activity levels",
-    },
+    { value: "max_protein", label: "Maximum Protein", icon: TrendingUp, color: "red" },
+    { value: "max_calories", label: "Maximum Calories", icon: TrendingUp, color: "blue" },
+    { value: "min_calories", label: "Minimum Calories", icon: TrendingDown, color: "green" },
+    { value: "balanced", label: "Balanced Nutrition", icon: Target, color: "purple" },
+    { value: "low_sodium", label: "Low Sodium", icon: Heart, color: "pink" },
+    { value: "high_fiber", label: "High Fiber", icon: Leaf, color: "orange" },
   ]
 
   const diningCourts = [
@@ -87,68 +79,160 @@ export function MealOptimizer() {
     "Windsor Dining Court",
   ]
 
+  // Mock food items for demonstration
+  const mockFoodItems: FoodItem[] = [
+    {
+      id: "1",
+      name: "Scrambled Eggs",
+      diningCourt: "Wiley",
+      mealType: "breakfast",
+      category: "entree",
+      calories: 140,
+      protein: 12,
+      carbs: 2,
+      fat: 10,
+      fiber: 0,
+      sodium: 180,
+      servingSize: "2 eggs",
+    },
+    {
+      id: "2",
+      name: "Greek Yogurt",
+      diningCourt: "Wiley",
+      mealType: "breakfast",
+      category: "side",
+      calories: 100,
+      protein: 15,
+      carbs: 6,
+      fat: 0,
+      fiber: 0,
+      sodium: 60,
+      servingSize: "6 oz",
+    },
+    {
+      id: "3",
+      name: "Grilled Chicken Breast",
+      diningCourt: "Ford",
+      mealType: "lunch",
+      category: "entree",
+      calories: 230,
+      protein: 43,
+      carbs: 0,
+      fat: 5,
+      fiber: 0,
+      sodium: 70,
+      servingSize: "6 oz",
+    },
+    {
+      id: "4",
+      name: "Quinoa Salad",
+      diningCourt: "Ford",
+      mealType: "lunch",
+      category: "side",
+      calories: 180,
+      protein: 8,
+      carbs: 32,
+      fat: 4,
+      fiber: 6,
+      sodium: 200,
+      servingSize: "1 cup",
+    },
+    {
+      id: "5",
+      name: "Salmon Fillet",
+      diningCourt: "Earhart",
+      mealType: "dinner",
+      category: "entree",
+      calories: 280,
+      protein: 39,
+      carbs: 0,
+      fat: 12,
+      fiber: 0,
+      sodium: 90,
+      servingSize: "6 oz",
+    },
+    {
+      id: "6",
+      name: "Roasted Vegetables",
+      diningCourt: "Earhart",
+      mealType: "dinner",
+      category: "side",
+      calories: 80,
+      protein: 2,
+      carbs: 18,
+      fat: 0,
+      fiber: 4,
+      sodium: 20,
+      servingSize: "1 cup",
+    },
+  ]
+
   const handleOptimize = async () => {
     setIsOptimizing(true)
     setOptimizationProgress(0)
     setOptimizedMeals([])
 
-    try {
-      // Simulate progress
-      const progressInterval = setInterval(() => {
-        setOptimizationProgress((prev) => Math.min(prev + 10, 90))
-      }, 200)
-
-      const selectedType = optimizationTypes.find((type) => type.value === selectedOptimization)
-
-      const response = await fetch("/api/optimize", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          optimizationType: selectedOptimization,
-          calorieTarget: selectedType?.calorieTarget,
-          diningCourt: selectedDiningCourt === "All Dining Courts" ? undefined : selectedDiningCourt,
-        }),
-      })
-
-      clearInterval(progressInterval)
-      setOptimizationProgress(100)
-
-      if (!response.ok) {
-        throw new Error("Optimization failed")
-      }
-
-      const data = await response.json()
-      setOptimizedMeals(data.meals)
-      setSelectedMeal(data.meals[0])
-    } catch (error) {
-      console.error("[v0] Optimization error:", error)
-      // Fallback to mock data if API fails
-      const mockOptimizedMeals: OptimizedMeal[] = [
-        {
-          id: "1",
-          optimizationType: selectedOptimization,
-          calorieTarget: optimizationTypes.find((t) => t.value === selectedOptimization)?.calorieTarget || 2500,
-          breakfast: [],
-          lunch: [],
-          dinner: [],
-          totals: {
-            calories: optimizationTypes.find((t) => t.value === selectedOptimization)?.calorieTarget || 2500,
-            protein: 120,
-            carbs: 250,
-            fat: 80,
-            fiber: 25,
-            sodium: 1800,
-          },
-          score: 85,
-        },
-      ]
-      setOptimizedMeals(mockOptimizedMeals)
-      setSelectedMeal(mockOptimizedMeals[0])
-    } finally {
-      setIsOptimizing(false)
+    // Simulate optimization process
+    for (let i = 0; i <= 100; i += 10) {
+      await new Promise((resolve) => setTimeout(resolve, 200))
+      setOptimizationProgress(i)
     }
+
+    // Generate mock optimized meals
+    const mockOptimizedMeals: OptimizedMeal[] = [
+      {
+        id: "1",
+        optimizationType: selectedOptimization,
+        breakfast: [mockFoodItems[0], mockFoodItems[1]],
+        lunch: [mockFoodItems[2], mockFoodItems[3]],
+        dinner: [mockFoodItems[4], mockFoodItems[5]],
+        totals: {
+          calories: 1110,
+          protein: 119,
+          carbs: 58,
+          fat: 31,
+          fiber: 10,
+          sodium: 620,
+        },
+        score: 95,
+      },
+      {
+        id: "2",
+        optimizationType: selectedOptimization,
+        breakfast: [mockFoodItems[1]],
+        lunch: [mockFoodItems[2], mockFoodItems[3]],
+        dinner: [mockFoodItems[4]],
+        totals: {
+          calories: 890,
+          protein: 105,
+          carbs: 38,
+          fat: 21,
+          fiber: 6,
+          sodium: 420,
+        },
+        score: 88,
+      },
+      {
+        id: "3",
+        optimizationType: selectedOptimization,
+        breakfast: [mockFoodItems[0]],
+        lunch: [mockFoodItems[2]],
+        dinner: [mockFoodItems[4], mockFoodItems[5]],
+        totals: {
+          calories: 730,
+          protein: 96,
+          carbs: 20,
+          fat: 27,
+          fiber: 4,
+          sodium: 360,
+        },
+        score: 82,
+      },
+    ]
+
+    setOptimizedMeals(mockOptimizedMeals)
+    setSelectedMeal(mockOptimizedMeals[0])
+    setIsOptimizing(false)
   }
 
   const getOptimizationTypeInfo = (type: string) => {
@@ -173,18 +257,16 @@ export function MealOptimizer() {
           {/* Configuration */}
           <Card>
             <CardHeader>
-              <CardTitle>Meal Optimization Settings</CardTitle>
-              <CardDescription>
-                Select your calorie target and dining preferences for optimized meal planning
-              </CardDescription>
+              <CardTitle>Optimization Settings</CardTitle>
+              <CardDescription>Configure your meal optimization preferences and goals</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Calorie Target</label>
+                  <label className="text-sm font-medium">Optimization Goal</label>
                   <Select value={selectedOptimization} onValueChange={setSelectedOptimization}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select calorie target" />
+                      <SelectValue placeholder="Select optimization goal" />
                     </SelectTrigger>
                     <SelectContent>
                       {optimizationTypes.map((type) => (
@@ -199,8 +281,8 @@ export function MealOptimizer() {
                   </Select>
                 </div>
 
-                <div className="space-y-2 max-w-md mx-auto">
-                  <label className="text-sm font-medium text-center block">Dining Court Preference</label>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Dining Court Preference</label>
                   <Select value={selectedDiningCourt} onValueChange={setSelectedDiningCourt}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select dining court" />
@@ -218,10 +300,15 @@ export function MealOptimizer() {
 
               {selectedOptimization && (
                 <Alert>
-                  <Activity className="h-4 w-4" />
+                  <Sparkles className="h-4 w-4" />
                   <AlertDescription>
-                    <strong>{getOptimizationTypeInfo(selectedOptimization)?.label}</strong> -{" "}
-                    {getOptimizationTypeInfo(selectedOptimization)?.description}
+                    <strong>{getOptimizationTypeInfo(selectedOptimization)?.label}</strong> optimization will prioritize{" "}
+                    {selectedOptimization === "max_protein" && "meals with the highest protein content"}
+                    {selectedOptimization === "max_calories" && "meals with the highest caloric density"}
+                    {selectedOptimization === "min_calories" && "meals with the lowest caloric content"}
+                    {selectedOptimization === "balanced" && "meals with optimal macro and micronutrient balance"}
+                    {selectedOptimization === "low_sodium" && "meals with minimal sodium content"}
+                    {selectedOptimization === "high_fiber" && "meals with maximum fiber content"}.
                   </AlertDescription>
                 </Alert>
               )}
@@ -230,18 +317,18 @@ export function MealOptimizer() {
                 <Button
                   onClick={handleOptimize}
                   disabled={!selectedOptimization || isOptimizing}
-                  className="bg-slate-900 hover:bg-slate-800 text-white"
+                  className="bg-green-600 hover:bg-green-700"
                   size="lg"
                 >
                   {isOptimizing ? (
                     <>
                       <Clock className="mr-2 h-4 w-4 animate-spin" />
-                      Optimizing Meals...
+                      Optimizing...
                     </>
                   ) : (
                     <>
                       <Play className="mr-2 h-4 w-4" />
-                      Generate Meal Plans
+                      Start Optimization
                     </>
                   )}
                 </Button>
@@ -259,27 +346,31 @@ export function MealOptimizer() {
             </CardContent>
           </Card>
 
-          <div className="grid md:grid-cols-3 gap-4">
+          {/* Optimization Types Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {optimizationTypes.map((type) => (
               <Card
                 key={type.value}
-                className={`cursor-pointer transition-all hover:shadow-md border-2 ${
-                  selectedOptimization === type.value ? "border-slate-900 bg-slate-50" : "border-gray-200"
+                className={`cursor-pointer transition-all hover:shadow-md ${
+                  selectedOptimization === type.value ? "ring-2 ring-green-500 bg-green-50" : ""
                 }`}
                 onClick={() => setSelectedOptimization(type.value)}
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2">
-                    <type.icon className={`h-6 w-6 text-${type.color}-600`} />
-                    <div>
-                      <CardTitle className="text-base">{type.label.split(" (")[0]}</CardTitle>
-                      <div className="text-2xl font-bold text-slate-900">{type.calorieTarget.toLocaleString()}</div>
-                      <div className="text-xs text-gray-500">calories/day</div>
-                    </div>
+                    <type.icon className={`h-5 w-5 text-${type.color}-600`} />
+                    <CardTitle className="text-base">{type.label}</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-gray-600">{type.description}</p>
+                  <p className="text-sm text-gray-600">
+                    {type.value === "max_protein" && "Maximize protein intake for muscle building and recovery"}
+                    {type.value === "max_calories" && "Maximize caloric intake for bulking or high energy needs"}
+                    {type.value === "min_calories" && "Minimize calories for weight management or cutting"}
+                    {type.value === "balanced" && "Optimize for well-rounded nutritional balance"}
+                    {type.value === "low_sodium" && "Minimize sodium for heart health and blood pressure"}
+                    {type.value === "high_fiber" && "Maximize fiber for digestive health and satiety"}
+                  </p>
                 </CardContent>
               </Card>
             ))}
@@ -295,32 +386,32 @@ export function MealOptimizer() {
                 {optimizedMeals.map((meal, index) => (
                   <Card
                     key={meal.id}
-                    className={`cursor-pointer transition-all hover:shadow-md border-2 ${
-                      selectedMeal?.id === meal.id ? "border-slate-900 bg-slate-50" : "border-gray-200"
+                    className={`cursor-pointer transition-all hover:shadow-md ${
+                      selectedMeal?.id === meal.id ? "ring-2 ring-green-500 bg-green-50" : ""
                     }`}
                     onClick={() => setSelectedMeal(meal)}
                   >
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-base">Plan {index + 1}</CardTitle>
-                        <Badge variant="secondary" className="bg-slate-100 text-slate-800">
+                        <CardTitle className="text-base">Option {index + 1}</CardTitle>
+                        <Badge variant="secondary" className="bg-green-100 text-green-800">
                           {meal.score}% match
                         </Badge>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Target:</span>
-                          <span className="text-sm font-medium">{meal.calorieTarget?.toLocaleString()} cal</span>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-gray-600">Calories:</span> {meal.totals.calories}
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Actual:</span>
-                          <span className="text-sm font-medium">{meal.totals.calories.toLocaleString()} cal</span>
+                        <div>
+                          <span className="text-gray-600">Protein:</span> {meal.totals.protein}g
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Protein:</span>
-                          <span className="text-sm font-medium">{meal.totals.protein}g</span>
+                        <div>
+                          <span className="text-gray-600">Carbs:</span> {meal.totals.carbs}g
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Fat:</span> {meal.totals.fat}g
                         </div>
                       </div>
                     </CardContent>
@@ -333,15 +424,10 @@ export function MealOptimizer() {
                 <div className="lg:col-span-2 space-y-6">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold">Meal Plan Details</h3>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="flex items-center gap-1">
-                        <CheckCircle className="h-3 w-3" />
-                        {selectedMeal.score}% Optimized
-                      </Badge>
-                      <Badge className="bg-slate-900 text-white">
-                        {selectedMeal.calorieTarget?.toLocaleString()} cal target
-                      </Badge>
-                    </div>
+                    <Badge variant="outline" className="flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3" />
+                      {selectedMeal.score}% Optimized
+                    </Badge>
                   </div>
 
                   {/* Nutritional Summary */}
@@ -351,29 +437,27 @@ export function MealOptimizer() {
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        <div className="text-center p-4 bg-slate-50 rounded-lg border">
-                          <div className="text-2xl font-bold text-slate-900">
-                            {selectedMeal.totals.calories.toLocaleString()}
-                          </div>
-                          <div className="text-sm text-slate-600">Calories</div>
+                        <div className="text-center p-3 bg-red-50 rounded-lg">
+                          <div className="text-2xl font-bold text-red-600">{selectedMeal.totals.calories}</div>
+                          <div className="text-sm text-red-700">Calories</div>
                         </div>
-                        <div className="text-center p-4 bg-blue-50 rounded-lg border">
+                        <div className="text-center p-3 bg-blue-50 rounded-lg">
                           <div className="text-2xl font-bold text-blue-600">{selectedMeal.totals.protein}g</div>
                           <div className="text-sm text-blue-700">Protein</div>
                         </div>
-                        <div className="text-center p-4 bg-green-50 rounded-lg border">
+                        <div className="text-center p-3 bg-green-50 rounded-lg">
                           <div className="text-2xl font-bold text-green-600">{selectedMeal.totals.carbs}g</div>
                           <div className="text-sm text-green-700">Carbs</div>
                         </div>
-                        <div className="text-center p-4 bg-yellow-50 rounded-lg border">
+                        <div className="text-center p-3 bg-yellow-50 rounded-lg">
                           <div className="text-2xl font-bold text-yellow-600">{selectedMeal.totals.fat}g</div>
                           <div className="text-sm text-yellow-700">Fat</div>
                         </div>
-                        <div className="text-center p-4 bg-orange-50 rounded-lg border">
+                        <div className="text-center p-3 bg-orange-50 rounded-lg">
                           <div className="text-2xl font-bold text-orange-600">{selectedMeal.totals.fiber}g</div>
                           <div className="text-sm text-orange-700">Fiber</div>
                         </div>
-                        <div className="text-center p-4 bg-purple-50 rounded-lg border">
+                        <div className="text-center p-3 bg-purple-50 rounded-lg">
                           <div className="text-2xl font-bold text-purple-600">{selectedMeal.totals.sodium}mg</div>
                           <div className="text-sm text-purple-700">Sodium</div>
                         </div>
@@ -390,25 +474,23 @@ export function MealOptimizer() {
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-3">
-                            {selectedMeal[mealType as keyof typeof selectedMeal]?.length > 0 ? (
-                              selectedMeal[mealType as keyof typeof selectedMeal].map((item: FoodItem) => (
-                                <div
-                                  key={item.id}
-                                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
-                                >
-                                  <div>
-                                    <div className="font-medium">{item.name}</div>
-                                    <div className="text-sm text-gray-600">{item.serving_size}</div>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="secondary">{item.calories} cal</Badge>
-                                    <Badge variant="outline">{item.protein}g protein</Badge>
+                            {selectedMeal[mealType as keyof typeof selectedMeal].map((item: FoodItem) => (
+                              <div
+                                key={item.id}
+                                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                              >
+                                <div>
+                                  <div className="font-medium">{item.name}</div>
+                                  <div className="text-sm text-gray-600">
+                                    {item.diningCourt} • {item.servingSize}
                                   </div>
                                 </div>
-                              ))
-                            ) : (
-                              <div className="text-center py-4 text-gray-500">No items selected for {mealType}</div>
-                            )}
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="secondary">{item.calories} cal</Badge>
+                                  <Badge variant="outline">{item.protein}g protein</Badge>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </CardContent>
                       </Card>
@@ -423,10 +505,10 @@ export function MealOptimizer() {
                 <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No Optimization Results</h3>
                 <p className="text-gray-600 mb-4">
-                  Select a calorie target and generate meal plans to see optimized results.
+                  Configure your optimization settings and run the optimizer to see results.
                 </p>
                 <Button variant="outline" onClick={() => setSelectedOptimization("")}>
-                  Configure Settings
+                  Go to Configuration
                 </Button>
               </CardContent>
             </Card>
